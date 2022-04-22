@@ -1,18 +1,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import asdict, dataclass
-from typing import (
-    Annotated,
-    Callable,
-    Generic,
-    Iterable,
-    TypeVar,
-    cast,
-    get_type_hints,
-    overload,
-    Any
-)
+from typing import Callable, Generic, Iterable, TypeVar, cast, get_type_hints, overload
 
 if sys.version_info >= (3, 9):
     from typing import _AnnotatedAlias  # type: ignore
@@ -90,22 +79,3 @@ def exert(
         return wrapper(cls)
 
     return wrapper
-
-
-@exert(exclude=("a",))
-@dataclass
-class Hello:
-    a: Annotated[int, lambda x: x**2]
-    b: Annotated[int, lambda x: x**3]
-    c: int = 4
-
-    # def __init__(self, a, b):
-    #     self.a = a
-    #     self.b = b
-
-
-h = Hello(2, 2)
-print(h.b)
-# print(h.a)
-# print(h.b)
-# print(h.c)
