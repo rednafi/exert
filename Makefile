@@ -19,7 +19,8 @@ lint-check:  ## Check whether the codebase satisfies the linter rules.
 	@echo "Checking linter rules..."
 	@echo "========================"
 	@echo
-	@make lint-check
+	@black --fast --check $(path)
+	@isort
 	@echo 'y' | mypy $(path) --install-types
 
 
@@ -30,6 +31,8 @@ black: ## Apply black.
 	@echo "================="
 	@echo
 	@black --fast $(path)
+	@flake8 $(path)
+	@isort --profile black $(path)
 	@echo
 
 
@@ -38,7 +41,7 @@ isort: ## Apply isort.
 	@echo "Applying isort..."
 	@echo "================="
 	@echo
-	@isort $(path)
+	@isort $(path) --profile black
 
 
 .PHONY: flake
@@ -66,7 +69,7 @@ help: ## Show this help message.
 
 .PHONY: test
 test: ## Run the tests against the current version of Python.
-	pytest
+	pytest -v -s
 
 
 .PHONY: dep-lock

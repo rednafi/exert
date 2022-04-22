@@ -12,8 +12,13 @@ else:
     from typing_extensions import Annotated
 
 
+##########################################
+# Fixtures
+##########################################
+
+
 @pytest.fixture
-def class_with_one_convertor(a, b):
+def class_with_one_converter(a, b):
     @main.exert
     class Foo:
         a: Annotated[int, lambda x: x**2]
@@ -27,7 +32,7 @@ def class_with_one_convertor(a, b):
 
 
 @pytest.fixture
-def class_with_many_convertors(a, b):
+def class_with_many_converters(a, b):
     @main.exert
     class Foo:
         a: Annotated[dict, json.dumps]
@@ -41,7 +46,7 @@ def class_with_many_convertors(a, b):
 
 
 @pytest.fixture
-def dataclass_with_many_convertors(a, b):
+def dataclass_with_many_converters(a, b):
     @main.exert
     @dataclass
     class Foo:
@@ -49,6 +54,33 @@ def dataclass_with_many_convertors(a, b):
         b: Annotated[int, lambda x: x**3, str, lambda x: x + "__suffix"]
 
     yield Foo(a, b)
+
+
+@pytest.fixture
+def dataclass_with_arg_converter(a, b):
+    @main.exert(converters=(str,), apply_last=True)
+    @dataclass
+    class Foo:
+        a: Annotated[int, lambda x: x**2]
+        b: Annotated[int, lambda x: x**3]
+
+    yield Foo(a, b)
+
+
+@pytest.fixture
+def dataclass_with_exclude(a, b):
+    @main.exert(converters=(str,), apply_last=True, exclude=("a",))
+    @dataclass
+    class Foo:
+        a: Annotated[int, lambda x: x**2]
+        b: Annotated[int, lambda x: x**3]
+
+    yield Foo(a, b)
+
+
+##########################################
+# Tests
+##########################################
 
 
 @pytest.mark.parametrize(
@@ -59,8 +91,8 @@ def dataclass_with_many_convertors(a, b):
         (6, 7, (6**2, 7**3)),
     ),
 )
-def test_class_with_one_converter(class_with_one_convertor, expected):
-    foo = class_with_one_convertor
+def test_class_with_one_converter(class_with_one_converter, expected):
+    foo = class_with_one_converter
     expected_a, expected_b = expected
     assert foo.a == expected_a
     assert foo.b == expected_b
@@ -73,8 +105,8 @@ def test_class_with_one_converter(class_with_one_convertor, expected):
         ({"hello": "mars"}, 5, (json.dumps({"hello": "mars"}), f"{5**3}__suffix")),
     ),
 )
-def test_class_with_many_converter(class_with_many_convertors, expected):
-    foo = class_with_many_convertors
+def test_class_with_many_converter(class_with_many_converters, expected):
+    foo = class_with_many_converters
     expected_a, expected_b = expected
     assert foo.a == expected_a
     assert foo.b == expected_b
@@ -87,8 +119,36 @@ def test_class_with_many_converter(class_with_many_convertors, expected):
         ({"hello": "mars"}, 5, (json.dumps({"hello": "mars"}), f"{5**3}__suffix")),
     ),
 )
-def test_dataclass_with_many_converter(dataclass_with_many_convertors, expected):
-    foo = dataclass_with_many_convertors
+def test_dataclass_with_many_converter(dataclass_with_many_converters, expected):
+    foo = dataclass_with_many_converters
+    expected_a, expected_b = expected
+    assert foo.a == expected_a
+    assert foo.b == expected_b
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    (
+        (2, 3, (str(2**2), str(3**3))),
+        (4, 5, (str(4**2), str(5**3))),
+    ),
+)
+def test_dataclass_with_arg_converter(dataclass_with_arg_converter, expected):
+    foo = dataclass_with_arg_converter
+    expected_a, expected_b = expected
+    assert foo.a == expected_a
+    assert foo.b == expected_b
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    (
+        (2, 3, (2, str(3**3))),
+        (4, 5, (4, str(5**3))),
+    ),
+)
+def test_dataclass_with_exclude(dataclass_with_exclude, expected):
+    foo = dataclass_with_exclude
     expected_a, expected_b = expected
     assert foo.a == expected_a
     assert foo.b == expected_b
