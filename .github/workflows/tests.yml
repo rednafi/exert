@@ -1,4 +1,4 @@
-ame: Run Tests
+Name: Run Tests
 
 on:
   release:
