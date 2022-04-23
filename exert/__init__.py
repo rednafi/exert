@@ -61,13 +61,14 @@ def exert(
     *,
     converters: Iterable[Callable] | None = None,
     apply_last: bool = False,
-    exclude: Iterable[str] | None = None,
-    include: Iterable[str] | None = None,
+    tagged_exclude: Iterable[str] | None = None,
+    untagged_include: Iterable[str] | None = None,
 ) -> Callable:
 
-    """Apply the converters to the class attributes. By default,
-    fields with the 'Annotated' type-hints are included and the rest
-    are excluded.
+    """Apply the converters to the class attributes.
+
+    By default, fields with the 'Annotated' type-hints are included
+    and the rest are excluded.
 
     Parameters
     ----------
@@ -80,11 +81,11 @@ def exert(
     apply_last : bool, optional
         Apply the converters after everything else, by default
 
-    exclude : Iterable[str] | None, optional
-        Annotated fields to be excluded, by default None
+    tagged_exclude : Iterable[str] | None, optional
+        Fields with the 'Annotated' tag to be excluded, by default None
 
-    include : Iterable[str] | None, optional
-        Un-Annotated fields to be included, by default None
+    untagged_include : Iterable[str] | None, optional
+        Fields without the 'Annotated' tag to be included, by default None
 
 
     Returns
@@ -98,18 +99,20 @@ def exert(
         cls_dict_get = cls.__dict__.get
 
         for attr, typ in typ_ann.items():
-            if isinstance(include, Iterable) and attr in include:
+            if isinstance(untagged_include, Iterable) and attr in untagged_include:
                 if isinstance(typ, _AnnotatedAlias):
                     raise TypeError(
-                        "field in the 'include' parameter cannot be tagged with 'Annotated'"
+                        "field in the 'untagged_include' parameter cannot be tagged "
+                        "with 'Annotated'"
                     )
                 if isinstance(converters, Iterable):
                     setattr(cls, attr, Convert(*converters))
 
-            if isinstance(exclude, Iterable) and attr in exclude:
+            if isinstance(tagged_exclude, Iterable) and attr in tagged_exclude:
                 if not isinstance(typ, _AnnotatedAlias):
                     raise TypeError(
-                        "field in the 'exclude' parameter must be tagged with 'Annotated'"
+                        "field in the 'tagged_exclude' parameter must be tagged "
+                        "with 'Annotated'"
                     )
                 continue
 
