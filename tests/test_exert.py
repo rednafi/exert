@@ -167,13 +167,64 @@ def test_dataclass_without_annotated(a, b, expected):
 
 
 @pytest.mark.parametrize(
+    "a,b,expected",
+    (
+        (2, 3.0, ("2", "3.0")),
+        (4, 5.0, ("4", "5.0")),
+    ),
+)
+def test_dataclass_include_all(a, b, expected):
+    @main.exert(
+        converters=(str,),
+        apply_last=True,
+        untagged_include="__all__",
+    )
+    @dataclass
+    class Foo:
+        a: int
+        b: float
+
+    foo = Foo(
+        a,
+        b,
+    )
+    expected_a, expected_b = expected
+    assert foo.a == expected_a
+    assert foo.b == expected_b
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    (
+        (2, 3.0, (2, 3.0)),
+        (4, 5.0, (4, 5.0)),
+    ),
+)
+def test_dataclass_exclude_all(a, b, expected):
+    @main.exert(
+        converters=(str,),
+        apply_last=True,
+        tagged_exclude="__all__",
+    )
+    @dataclass
+    class Foo:
+        a: Annotated[int, str]
+        b: Annotated[float, str]
+
+    foo = Foo(a, b)
+    expected_a, expected_b = expected
+    assert foo.a == expected_a
+    assert foo.b == expected_b
+
+
+@pytest.mark.parametrize(
     "a,b,c,d,expected",
     (
         ({1: 2, 3: 4}, {1: 2, 3: 4}, 2, 3, ("2", {1: 2, 3: 4}, 2, "3")),
         ({1: 2, 3: 4}, {4: 5, 6: 7}, 2, 3, ("2", {4: 5, 6: 7}, 2, "3")),
     ),
 )
-def test_dataclass_all(a, b, c, d, expected):
+def test_dataclass_complex(a, b, c, d, expected):
     """Test complex behavior."""
 
     @main.exert(

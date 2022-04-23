@@ -61,8 +61,8 @@ def exert(
     *,
     converters: Iterable[Callable] | None = None,
     apply_last: bool = False,
-    tagged_exclude: Iterable[str] | None = None,
-    untagged_include: Iterable[str] | None = None,
+    tagged_exclude: Iterable[str] | str | None = None,
+    untagged_include: Iterable[str] | str | None = None,
 ) -> Callable:
 
     """Apply the converters to the class attributes.
@@ -97,23 +97,32 @@ def exert(
     def wrapper(cls: type[_C]) -> type[_C]:
         typ_ann = get_type_hints(cls, include_extras=True)
         cls_dict_get = cls.__dict__.get
+        untagged_include_error = "field in the 'untagged_include' parameter cannot "
+        "be tagged with 'Annotated'"
+        tagged_exclude_error = "field in the 'tagged_exclude' parameter must be tagged "
+        "with 'Annotated'"
 
         for attr, typ in typ_ann.items():
-            if isinstance(untagged_include, Iterable) and attr in untagged_include:
+            if untagged_include == "__all__":
                 if isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(
-                        "field in the 'untagged_include' parameter cannot be tagged "
-                        "with 'Annotated'"
-                    )
+                    raise TypeError(untagged_include_error)
                 if isinstance(converters, Iterable):
                     setattr(cls, attr, Convert(*converters))
 
-            if isinstance(tagged_exclude, Iterable) and attr in tagged_exclude:
+            elif isinstance(untagged_include, Iterable) and attr in untagged_include:
+                if isinstance(typ, _AnnotatedAlias):
+                    raise TypeError(untagged_include_error)
+                if isinstance(converters, Iterable):
+                    setattr(cls, attr, Convert(*converters))
+
+            if tagged_exclude == "__all__":
                 if not isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(
-                        "field in the 'tagged_exclude' parameter must be tagged "
-                        "with 'Annotated'"
-                    )
+                    raise TypeError(tagged_exclude_error)
+                continue
+
+            elif isinstance(tagged_exclude, Iterable) and attr in tagged_exclude:
+                if not isinstance(typ, _AnnotatedAlias):
+                    raise TypeError(tagged_exclude_error)
                 continue
 
             if not (isinstance(typ, _AnnotatedAlias) and cls_dict_get(attr, _NOTHING)):
@@ -132,22 +141,3 @@ def exert(
         return wrapper(cls)
 
     return wrapper
-
-
-# def transform(x):
-#     return x + 2
-
-
-# from dataclasses import dataclass
-# from typing import Annotated
-
-
-# @exert(converters=(lambda x: x**2, *(transform for _ in range(5))), include=("b"))
-# @dataclass
-# class Foo:
-#     a: Annotated[int, lambda x: str(x) + "hello"]
-#     b: int
-
-
-# foo = Foo(2, 3)
-# print(foo.b)

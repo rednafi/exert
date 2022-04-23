@@ -189,3 +189,47 @@ foo = Foo(2, 42.0)
 print(foo.a)  # prints 6.401e-11 [2/100=0.02, 0.02**2=0.004, 0.0004**3=6.401e-11]
 print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
 ```
+
+### Include all untagged fields
+
+To apply converters to all the untagged fields, use `untagged_include="__all__"`:
+
+```python
+...
+@exert(
+    converters=(lambda x: x**2, lambda x: x**3),
+    untagged_include="__all__",
+)
+@dataclass
+class Foo:
+    a: int
+    b: float
+
+
+foo = Foo(2, 42.0)
+
+print(foo.a)  # prints 64   [2**2=4, 4**4=64]
+print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
+```
+
+### Exclude all tagged fields
+
+To ignore all the fields tagged with `Annotated`, use `tagged_exclude="__all__"`:
+
+```python
+...
+@exert(
+    converters=(lambda x: x**2, lambda x: x**3),
+    tagged_exclude="__all__",
+)
+@dataclass
+class Foo:
+    a: Annotated[int, lambda x: x**2]
+    b: Annotated[float, lambda x: x**3]
+
+
+foo = Foo(2, 42.0)
+
+print(foo.a)  # prints 2   [Untouched]
+print(foo.b)  # prints 42.0 [Untouched]
+```
