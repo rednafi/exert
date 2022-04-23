@@ -81,3 +81,14 @@ dep-lock: ## Freeze deps in 'requirements.txt' file.
 .PHONY: dep-sync
 dep-sync: ## Sync venv installation with 'requirements.txt' file.
 	@pip-sync
+
+
+.PHONY: build
+build: ## Build the package.
+	@rm -rf dist/*
+	@python -m build
+
+
+.PHONY: upload
+upload: build ## Build the package.
+	@twine upload dist/*
