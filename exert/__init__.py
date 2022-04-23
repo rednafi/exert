@@ -53,7 +53,7 @@ class Convert(Generic[_T]):
         self._value = value
 
     def __repr__(self) -> str:
-        return "<exert converter>"
+        return "<exert Convert>"
 
 
 def exert(
