@@ -1,6 +1,9 @@
-# Exert
+<h1>Exert<img src='https://user-images.githubusercontent.com/30027932/164949229-8ef0baf9-119c-4cd6-8df9-c1b6644b399b.png' align='right' width='128' height='128'></h1>
 
-Declaratively apply converter functions to class attributes.
+
+<strong>>> <i>Declaratively apply converter functions to class attributes.</i> <<</strong>
+
+</div>
 
 ## Installation
 
