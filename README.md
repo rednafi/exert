@@ -103,7 +103,7 @@ print(foo.a)  # prints 64  [2**2=4, 4**3=64]
 print(foo.b)  # prints 42.0 [This field was ignored]
 ```
 
-## Including untagged fields
+### Including untagged fields
 
 By default, `exert` will ignore fields that aren't tagged with `Annotated`. But you can
 still apply converters to those fields. You'll need to use `converters` and `untagged_include` together:
@@ -146,7 +146,7 @@ print(foo.a)  # prints 2      [This field remains untouched]
 print(foo.b)  # prints 1764.0 [42.0**2=1764.0]
 ```
 
-## Apply common and tagged converters together
+### Apply common and tagged converters together
 
 You can apply a sequence of common converters and tagged converters together. By default,
 the common converters are applied first and then the tagged converters are applied
