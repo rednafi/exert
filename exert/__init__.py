@@ -63,7 +63,7 @@ def exert(
     exclude: Iterable[str] | None = None,
 ) -> Callable:
 
-    """Apply the converter on the class attributes."""
+    """Apply the converters on the class attributes."""
 
     def wrapper(cls: type[_C]) -> type[_C]:
         typ_ann = get_type_hints(cls, include_extras=True)
@@ -89,18 +89,3 @@ def exert(
         return wrapper(cls)
 
     return wrapper
-
-
-# from dataclasses import dataclass
-# from typing import Annotated
-
-# @exert(exclude=['a'])
-# @dataclass
-# class Foo:
-#     a: Annotated[int, lambda x: x**2]
-#     b: int
-
-
-# foo = Foo(2,3)
-# print(foo.a)
-# print(foo.b)
