@@ -97,10 +97,15 @@ def exert(
     def wrapper(cls: type[_C]) -> type[_C]:
         typ_ann = get_type_hints(cls, include_extras=True)
         cls_dict_get = cls.__dict__.get
-        untagged_include_error = "field in the 'untagged_include' parameter cannot "
-        "be tagged with 'Annotated'"
-        tagged_exclude_error = "field in the 'tagged_exclude' parameter must be tagged "
-        "with 'Annotated'"
+
+        untagged_include_error = (
+            "field in the 'untagged_include' parameter cannot be tagged "
+            "with 'Annotated'"
+        )
+
+        tagged_exclude_error = (
+            "field in the 'tagged_exclude' parameter must be tagged with 'Annotated'"
+        )
 
         for attr, typ in typ_ann.items():
             if untagged_include == "__all__":
