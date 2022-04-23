@@ -21,7 +21,7 @@ _NOTHING = _N()
 
 
 class Convert(Generic[_T]):
-    """Descriptor that applies converter callables on the attribute values."""
+    """Descriptor that applies converter callables to the attribute values."""
 
     def __init__(self, *converters: Callable) -> None:
         self._converters = converters
@@ -48,6 +48,7 @@ class Convert(Generic[_T]):
         for converter in self._converters:
             if not callable(converter):
                 raise TypeError("converter must be a callable")
+
             value = converter(value)
         self._value = value
 
@@ -61,16 +62,55 @@ def exert(
     converters: Iterable[Callable] | None = None,
     apply_last: bool = False,
     exclude: Iterable[str] | None = None,
+    include: Iterable[str] | None = None,
 ) -> Callable:
 
-    """Apply the converters on the class attributes."""
+    """Apply the converters to the class attributes. By default,
+    fields with the 'Annotated' type-hints are included and the rest
+    are excluded.
+
+    Parameters
+    ----------
+    cls : type[_C] | None, optional
+        Undecorated class, by default None
+
+    converters : Iterable[Callable] | None, optional
+        Callables to be applied, by default None
+
+    apply_last : bool, optional
+        Apply the converters after everything else, by default
+
+    exclude : Iterable[str] | None, optional
+        Annotated fields to be excluded, by default None
+
+    include : Iterable[str] | None, optional
+        Un-Annotated fields to be included, by default None
+
+
+    Returns
+    -------
+    Callable
+        Decorated class
+    """
 
     def wrapper(cls: type[_C]) -> type[_C]:
         typ_ann = get_type_hints(cls, include_extras=True)
         cls_dict_get = cls.__dict__.get
 
         for attr, typ in typ_ann.items():
+            if isinstance(include, Iterable) and attr in include:
+                if isinstance(typ, _AnnotatedAlias):
+                    raise TypeError(
+                        "field in the 'include' parameter cannot be tagged with 'Annotated'"
+                    )
+                if isinstance(converters, Iterable):
+                    setattr(cls, attr, Convert(*converters))
+
             if isinstance(exclude, Iterable) and attr in exclude:
+                if not isinstance(typ, _AnnotatedAlias):
+                    raise TypeError(
+                        "field in the 'exclude' parameter must be tagged with 'Annotated'"
+                    )
                 continue
 
             if not (isinstance(typ, _AnnotatedAlias) and cls_dict_get(attr, _NOTHING)):
@@ -89,3 +129,22 @@ def exert(
         return wrapper(cls)
 
     return wrapper
+
+
+# def transform(x):
+#     return x + 2
+
+
+# from dataclasses import dataclass
+# from typing import Annotated
+
+
+# @exert(converters=(lambda x: x**2, *(transform for _ in range(5))), include=("b"))
+# @dataclass
+# class Foo:
+#     a: Annotated[int, lambda x: str(x) + "hello"]
+#     b: int
+
+
+# foo = Foo(2, 3)
+# print(foo.b)
