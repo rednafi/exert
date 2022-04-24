@@ -131,8 +131,7 @@ print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
 
 ### Apply common converters without repetition
 
-Common converters can be applied to multiple fields without introducing any repetition. The
-the previous section already shows how to do it:
+Common converters can be applied to multiple fields without introducing any repetition. The last section already shows how to do it:
 
 ```python
 ...
