@@ -176,6 +176,7 @@ you'll need to set the `apply_last` parameter to `True`:
 
 ```python
 ...
+
 @exert(
     converters=(lambda x: x**2, lambda x: x**3),
     untagged_include=("b",),
