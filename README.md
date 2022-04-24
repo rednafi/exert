@@ -43,7 +43,7 @@ print(foo.b) # prints 21.0
 
 Here, the lambda function inside the `Annotated` tag is the converter.
 
-### Using with dataclasses
+### Use with dataclasses
 
 Dataclasses can also be used to avoid writing the initializer by hand. For example:
 
@@ -87,7 +87,7 @@ print(foo.b) # prints 7.0 [42.0/2=21.0, 21.0/3=7.0]
 ```
 
 
-### Excluding tagged fields
+### Exclude tagged fields
 
 If you want to exclude a field that's tagged with `Annotated`, you can do so using the `tagged_exclude` parameter:
 
@@ -107,7 +107,7 @@ print(foo.a)  # prints 64  [2**2=4, 4**3=64]
 print(foo.b)  # prints 42.0 [This field was ignored]
 ```
 
-### Including untagged fields
+### Include untagged fields
 
 By default, `exert` will ignore fields that aren't tagged with `Annotated`. But you can
 still apply converters to those fields. You'll need to use `converters` and `untagged_include` together:
