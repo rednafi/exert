@@ -49,6 +49,7 @@ Dataclasses can also be used to avoid writing the initializer by hand. For examp
 
 ```python
 ...
+
 from dataclasses import dataclass
 
 
@@ -238,3 +239,7 @@ foo = Foo(2, 42.0)
 print(foo.a)  # prints 2   [Untouched]
 print(foo.b)  # prints 42.0 [Untouched]
 ```
+
+<div align="center">
+<i> ✨ 🍰 ✨ </i>
+</div>
