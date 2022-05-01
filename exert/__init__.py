@@ -4,20 +4,15 @@ import sys
 from typing import Callable, Generic, Iterable, TypeVar, cast, overload
 
 if sys.version_info >= (3, 9):
-    from typing import _AnnotatedAlias, get_type_hints  # type: ignore
+    from typing import Annotated, get_type_hints, get_args, get_origin
 else:
-    from typing_extensions import _AnnotatedAlias, get_type_hints  # type: ignore
+    from typing_extensions import Annotated, get_type_hints, get_args, get_origin
 
+
+__all__ = ('exert', 'Mark')
 
 _C = TypeVar("_C")
 _T = TypeVar("_T")
-
-
-class _N:
-    pass
-
-
-_NOTHING = _N()
 
 
 class Convert(Generic[_T]):
@@ -47,8 +42,7 @@ class Convert(Generic[_T]):
     def __set__(self, obj: object, value: _T) -> None:
         for converter in self._converters:
             if not callable(converter):
-                raise TypeError("converter must be a callable")
-
+                raise TypeError(f"{converter} is not a callable")
             value = converter(value)
         self._value = value
 
@@ -56,13 +50,33 @@ class Convert(Generic[_T]):
         return "<exert Convert>"
 
 
+class Mark:
+    def __init__(self, *converters: Callable) -> None:
+        self._converters = converters
+
+    def __repr__(self) -> str:
+        return "<exert Converter>"
+
+
+def get_markers_from_annotation(annotation: type, marker_cls: type[_T]) -> list[_T]:
+    """
+    In the case of multiple markers in PEP 593 Annotated or nested use of Annotated
+    (which are equivalent and get flattened by Annoated itself) we return markers from
+    left to right.
+    """
+    return [
+        converter
+        for arg in get_args(annotation)
+        if isinstance(arg, marker_cls)
+        for converter in arg._converters
+    ]
+
+
 def exert(
     cls: type[_C] | None = None,
     *,
     converters: Iterable[Callable] | None = None,
     apply_last: bool = False,
-    tagged_exclude: Iterable[str] | str | None = None,
-    untagged_include: Iterable[str] | str | None = None,
 ) -> Callable:
 
     """Apply the converters to the class attributes.
@@ -81,13 +95,6 @@ def exert(
     apply_last : bool, optional
         Apply the converters after everything else, by default
 
-    tagged_exclude : Iterable[str] | None, optional
-        Fields with the 'Annotated' tag to be excluded, by default None
-
-    untagged_include : Iterable[str] | None, optional
-        Fields without the 'Annotated' tag to be included, by default None
-
-
     Returns
     -------
     Callable
@@ -96,53 +103,37 @@ def exert(
 
     def wrapper(cls: type[_C]) -> type[_C]:
         typ_ann = get_type_hints(cls, include_extras=True)
-        cls_dict_get = cls.__dict__.get
-
-        untagged_include_error = (
-            "field in the 'untagged_include' parameter cannot be tagged "
-            "with 'Annotated'"
-        )
-
-        tagged_exclude_error = (
-            "field in the 'tagged_exclude' parameter must be tagged with 'Annotated'"
-        )
 
         for attr, typ in typ_ann.items():
-            if untagged_include == "__all__":
-                if isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(untagged_include_error)
-                if isinstance(converters, Iterable):
-                    setattr(cls, attr, Convert(*converters))
-
-            elif isinstance(untagged_include, Iterable) and attr in untagged_include:
-                if isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(untagged_include_error)
-                if isinstance(converters, Iterable):
-                    setattr(cls, attr, Convert(*converters))
-
-            if tagged_exclude == "__all__":
-                if not isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(tagged_exclude_error)
+            if not get_origin(typ) is Annotated:
                 continue
 
-            elif isinstance(tagged_exclude, Iterable) and attr in tagged_exclude:
-                if not isinstance(typ, _AnnotatedAlias):
-                    raise TypeError(tagged_exclude_error)
-                continue
-
-            if not (isinstance(typ, _AnnotatedAlias) and cls_dict_get(attr, _NOTHING)):
-                continue
+            marked_converters = get_markers_from_annotation(typ, Mark)
 
             if isinstance(converters, Iterable):
                 if apply_last and isinstance(converters, Iterable):
-                    setattr(cls, attr, Convert(*typ.__metadata__, *converters))
+                    setattr(cls, attr, Convert(*marked_converters, *converters))
                 else:
-                    setattr(cls, attr, Convert(*converters, *typ.__metadata__))
+                    setattr(cls, attr, Convert(*converters, *marked_converters))
             else:
-                setattr(cls, attr, Convert(*typ.__metadata__))
+                setattr(cls, attr, Convert(*marked_converters))
         return cls
 
     if cls is not None:
         return wrapper(cls)
 
     return wrapper
+
+
+# from dataclasses import dataclass
+# from typing import Annotated
+
+# @exert(converters=(str,), apply_last=True)
+# @dataclass
+# class Foo:
+#     a: Annotated[int, lambda x: x**2]
+#     b: Annotated[int, None]
+
+
+# foo = Foo(2, 3)
+# print(isinstance(foo.b, str))

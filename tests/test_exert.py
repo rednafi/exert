@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytest
 
-import exert as main
+from exert import exert, Mark
 
 if sys.version_info >= (3, 9):
     from typing import Annotated
@@ -23,10 +23,10 @@ else:
     ),
 )
 def test_class_with_one_converter(a, b, expected):
-    @main.exert
+    @exert
     class Foo:
-        a: Annotated[int, lambda x: x**2]
-        b: Annotated[int, lambda x: x**3]
+        a: Annotated[int, Mark(lambda x: x**2)]
+        b: Annotated[int, Mark(lambda x: x**3)]
 
         def __init__(self, a, b):
             self.a = a
@@ -46,11 +46,11 @@ def test_class_with_one_converter(a, b, expected):
         ({"hello": "mars"}, 5, (json.dumps({"hello": "mars"}), f"{5**3}__suffix")),
     ),
 )
-def test_class_with_many_converter(a, b, expected):
-    @main.exert
+def test_class_with_many_converters(a, b, expected):
+    @exert
     class Foo:
-        a: Annotated[dict, json.dumps]
-        b: Annotated[int, lambda x: x**3, str, lambda x: x + "__suffix"]
+        a: Annotated[dict, Mark(json.dumps)]
+        b: Annotated[int, Mark(lambda x: x**3, str, lambda x: x + "__suffix")]
 
         def __init__(self, a, b):
             self.a = a
@@ -70,12 +70,12 @@ def test_class_with_many_converter(a, b, expected):
         ({"hello": "mars"}, 5, (json.dumps({"hello": "mars"}), f"{5**3}__suffix")),
     ),
 )
-def test_dataclass_with_many_converter(a, b, expected):
-    @main.exert
+def test_dataclass_with_many_converters(a, b, expected):
+    @exert
     @dataclass
     class Foo:
-        a: Annotated[dict, json.dumps]
-        b: Annotated[int, lambda x: x**3, str, lambda x: x + "__suffix"]
+        a: Annotated[dict, Mark(json.dumps)]
+        b: Annotated[int, Mark(lambda x: x**3, str, lambda x: x + "__suffix")]
 
     foo = Foo(a, b)
 
@@ -91,12 +91,12 @@ def test_dataclass_with_many_converter(a, b, expected):
         (4, 5, (str(4**2), str(5**3))),
     ),
 )
-def test_dataclass_with_arg_converter(a, b, expected):
-    @main.exert(converters=(str,), apply_last=True)
+def test_dataclass_with_common_converters(a, b, expected):
+    @exert(converters=(str,), apply_last=True)
     @dataclass
     class Foo:
-        a: Annotated[int, lambda x: x**2]
-        b: Annotated[int, lambda x: x**3]
+        a: Annotated[int, Mark(lambda x: x**2)]
+        b: Annotated[int, Mark(lambda x: x**3)]
 
     foo = Foo(a, b)
 
@@ -108,16 +108,16 @@ def test_dataclass_with_arg_converter(a, b, expected):
 @pytest.mark.parametrize(
     "a,b,expected",
     (
-        (2, 3, (2, str(3**3))),
-        (4, 5, (4, str(5**3))),
+        (2, 3, (str(2), str(3**3))),
+        (4, 5, (str(4), str(5**3))),
     ),
 )
-def test_dataclass_with_exclude(a, b, expected):
-    @main.exert(converters=(str,), apply_last=True, tagged_exclude=("a",))
+def test_dataclass_exclude_annotated_field(a, b, expected):
+    @exert(converters=(str,), apply_last=True)
     @dataclass
     class Foo:
-        a: Annotated[int, lambda x: x**2]
-        b: Annotated[int, lambda x: x**3]
+        a: Annotated[int, lambda x: x**2]  # lambda x: x**2 won't be applied.
+        b: Annotated[int, Mark(lambda x: x**3)]
 
     foo = Foo(a, b)
 
@@ -129,35 +129,15 @@ def test_dataclass_with_exclude(a, b, expected):
 @pytest.mark.parametrize(
     "a,b,expected",
     (
-        (2, 3, (str(2**2), str(3))),
-        (4, 5, (str(4**2), str(5))),
+        (2, 3, (str(2), 3)),
+        (4, 5, (str(4), 5)),
     ),
 )
-def test_dataclass_with_include(a, b, expected):
-    @main.exert(converters=(str,), apply_last=True, untagged_include=("b",))
+def test_dataclass_exclude_unannotated_field(a, b, expected):
+    @exert(converters=(str,), apply_last=True)
     @dataclass
     class Foo:
         a: Annotated[int, lambda x: x**2]
-        b: int
-
-    foo = Foo(a, b)
-    expected_a, expected_b = expected
-    assert foo.a == expected_a
-    assert foo.b == expected_b
-
-
-@pytest.mark.parametrize(
-    "a,b,expected",
-    (
-        (2, 3, (2, str(3))),
-        (4, 5, (4, str(5))),
-    ),
-)
-def test_dataclass_without_annotated(a, b, expected):
-    @main.exert(converters=(str,), apply_last=False, untagged_include=("b",))
-    @dataclass
-    class Foo:
-        a: int
         b: int
 
     foo = Foo(a, b)
@@ -173,16 +153,15 @@ def test_dataclass_without_annotated(a, b, expected):
         (4, 5.0, ("4", "5.0")),
     ),
 )
-def test_dataclass_include_all(a, b, expected):
-    @main.exert(
+def test_dataclass_apply_common_converters_to_annotated_fields(a, b, expected):
+    @exert(
         converters=(str,),
         apply_last=True,
-        untagged_include="__all__",
     )
     @dataclass
     class Foo:
-        a: int
-        b: float
+        a: Annotated[int, None]
+        b: Annotated[float, None]
 
     foo = Foo(
         a,
@@ -194,51 +173,25 @@ def test_dataclass_include_all(a, b, expected):
 
 
 @pytest.mark.parametrize(
-    "a,b,expected",
-    (
-        (2, 3.0, (2, 3.0)),
-        (4, 5.0, (4, 5.0)),
-    ),
-)
-def test_dataclass_exclude_all(a, b, expected):
-    @main.exert(
-        converters=(str,),
-        apply_last=True,
-        tagged_exclude="__all__",
-    )
-    @dataclass
-    class Foo:
-        a: Annotated[int, str]
-        b: Annotated[float, str]
-
-    foo = Foo(a, b)
-    expected_a, expected_b = expected
-    assert foo.a == expected_a
-    assert foo.b == expected_b
-
-
-@pytest.mark.parametrize(
     "a,b,c,d,expected",
     (
-        ({1: 2, 3: 4}, {1: 2, 3: 4}, 2, 3, ("2", {1: 2, 3: 4}, 2, "3")),
-        ({1: 2, 3: 4}, {4: 5, 6: 7}, 2, 3, ("2", {4: 5, 6: 7}, 2, "3")),
+        ({1: 2, 3: 4}, {1: 2, 3: 4}, 2, 3, ("2", "4", "2", "3")),
+        ({1: 2, 3: 4}, {4: 5, 3: 7}, 2, 3, ("2", "7", "2", "3")),
     ),
 )
 def test_dataclass_complex(a, b, c, d, expected):
     """Test complex behavior."""
 
-    @main.exert(
+    @exert(
         converters=(json.dumps,),
         apply_last=True,
-        tagged_exclude=("b",),
-        untagged_include=("d",),
     )
     @dataclass
     class Foo:
-        a: Annotated[dict, lambda d: d[1]]
-        b: Annotated[dict, lambda d: d[3]]
-        c: int
-        d: int
+        a: Annotated[dict, Mark(lambda d: d[1])]
+        b: Annotated[dict, Mark(lambda d: d[3])]
+        c: Annotated[int, None]
+        d: Annotated[int, None]
 
     foo = Foo(a, b, c, d)
     expected_a, expected_b, expected_c, expected_d = expected
