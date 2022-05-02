@@ -41,7 +41,7 @@ print(foo.a) # prints 4
 print(foo.b) # prints 21.0
 ```
 
-Here, the lambda function inside the `Annotated` tag is the converter.
+Here, the lambda function tagged with `Mark` is the converter.
 
 ### Use with dataclasses
 
@@ -86,11 +86,12 @@ print(foo.a) # prints 64  [2**2=4, 4**3=64]
 print(foo.b) # prints 7.0 [42.0/2=21.0, 21.0/3=7.0]
 ```
 
+Here, the converters are applied sequentially. The result of the preceding converter is
+fed into the succeeding converter as input. You've to make sure that the number of the returned values of the preceding converter matches that of the succeeding converter.
 
-### Exclude tagged fields
+### Exclude annotated fields
 
-If you want to exclude a field that's tagged with `Annotated`, you can choose not to
-tag it with `Mark`:
+If you don't wrap converters with `Mark`, the corresponding field won't be transformed:
 
 ```python
 ...
@@ -108,17 +109,17 @@ print(foo.a)  # prints 64  [2**2=4, 4**3=64]
 print(foo.b)  # prints 42.0 [This field was ignored]
 ```
 
-Since the converters in field `b` aren't tagged with `Mark`, no conversion happens.
+Since the converters in field `b` weren't tagged with `Mark`, no conversion happened.
 
 
 ### Apply common converters without repetition
 
-Common converters can be applied to multiple fields without introducing any repetition. The last section already shows how to do it:
+Common converters can be applied to multiple fields without repetition:
 
 ```python
 ...
 
-@exert(converters=(lambda x: x**2, ))
+@exert(converters=(lambda x: x**2,))
 @dataclass
 class Foo:
     a: Annotated[int, None]
@@ -131,9 +132,9 @@ print(foo.a)  # prints 2      [This field remains untouched]
 print(foo.b)  # prints 1764.0 [42.0**2=1764.0]
 ```
 
-### Apply common and tagged converters together
+### Apply common and marked converters together
 
-You can apply a sequence of common converters and tagged converters together. By default,
+You can apply a sequence of common converters and marked converters together. By default,
 the common converters are applied first and then the tagged converters are applied
 sequentially:
 
@@ -161,13 +162,12 @@ you'll need to set the `apply_last` parameter to `True`:
 
 @exert(
     converters=(lambda x: x**2, lambda x: x**3),
-    untagged_include=("b",),
     apply_last=True,
 )
 @dataclass
 class Foo:
-    a: Annotated[int, lambda x: x / 100]
-    b: float
+    a: Annotated[int, Mark(lambda x: x / 100)]
+    b: Annotated[float, None]
 
 
 foo = Foo(2, 42.0)
