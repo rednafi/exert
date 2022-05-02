@@ -22,13 +22,13 @@ class. For example:
 from __future__ import annotations
 
 from typing import Annotated
-from exert import exert
+from exert import exert, Mark
 
 
 @exert
 class Foo:
-    a: Annotated[int, lambda x: x**2]
-    b: Annotated[float, lambda x: x / 2]
+    a: Annotated[int, Mark(lambda x: x**2)]
+    b: Annotated[float, Mark(lambda x: x / 2)]
 
     def __init__(self, a: int, b: float) -> None:
         self.a = a
@@ -56,8 +56,8 @@ from dataclasses import dataclass
 @exert
 @datclasses
 class Foo:
-    a: Annotated[int, lambda x: x**2]
-    b: Annotated[float, lambda x: x / 2]
+    a: Annotated[int, Mark(lambda x: x**2)]
+    b: Annotated[float, Mark(lambda x: x / 2)]
 
 
 foo = Foo(2, 42.0)
@@ -76,8 +76,8 @@ Multiple converters are allowed. For example:
 @exert
 @dataclass
 class Foo:
-    a: Annotated[int, lambda x: x**2, lambda x: x**3]
-    b: Annotated[float, lambda x: x / 2, lambda x: x / 3]
+    a: Annotated[int, Mark(lambda x: x**2, lambda x: x**3)]
+    b: Annotated[float, Mark(lambda x: x / 2, lambda x: x / 3)]
 
 
 foo = Foo(2, 42.0)
@@ -89,15 +89,16 @@ print(foo.b) # prints 7.0 [42.0/2=21.0, 21.0/3=7.0]
 
 ### Exclude tagged fields
 
-If you want to exclude a field that's tagged with `Annotated`, you can do so using the `tagged_exclude` parameter:
+If you want to exclude a field that's tagged with `Annotated`, you can choose not to
+tag it with `Mark`:
 
 ```python
 ...
 
-@exert(tagged_exclude=("b",))
+@exert
 @dataclass
 class Foo:
-    a: Annotated[int, lambda x: x**2, lambda x: x**3]
+    a: Annotated[int, Mark(lambda x: x**2, lambda x: x**3)]
     b: Annotated[float, lambda x: x / 2, lambda x: x / 3]
 
 
@@ -107,27 +108,8 @@ print(foo.a)  # prints 64  [2**2=4, 4**3=64]
 print(foo.b)  # prints 42.0 [This field was ignored]
 ```
 
-### Include untagged fields
+Since the converters in field `b` aren't tagged with `Mark`, no conversion happens.
 
-By default, `exert` will ignore fields that aren't tagged with `Annotated`. But you can
-still apply converters to those fields. You'll need to use `converters` and `untagged_include` together:
-
-```python
-...
-
-@exert(converters=(lambda x: x**2, lambda x: x**3), untagged_include=("b",))
-@dataclass
-class Foo:
-    a: int
-    b: float
-
-
-foo = Foo(2, 42.0)
-
-print(foo.a)  # prints 2            [This field remains untouched]
-print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
-
-```
 
 ### Apply common converters without repetition
 
@@ -136,11 +118,11 @@ Common converters can be applied to multiple fields without introducing any repe
 ```python
 ...
 
-@exert(converters=(lambda x: x**2, ), untagged_include=("a", "b"))
+@exert(converters=(lambda x: x**2, ))
 @dataclass
 class Foo:
-    a: int
-    b: float
+    a: Annotated[int, None]
+    b: Annotated[float, None]
 
 
 foo = Foo(2, 42.0)
@@ -158,11 +140,11 @@ sequentially:
 ```python
 ...
 
-@exert(converters=(lambda x: x**2, lambda x: x**3), untagged_include=("b",))
+@exert(converters=(lambda x: x**2, lambda x: x**3))
 @dataclass
 class Foo:
-    a: Annotated[int, lambda x: x / 100]
-    b: float
+    a: Annotated[int, Mark(lambda x: x / 100)]
+    b: Annotated[float, None]
 
 
 foo = Foo(2, 42.0)
@@ -192,52 +174,6 @@ foo = Foo(2, 42.0)
 
 print(foo.a)  # prints 6.401e-11 [2/100=0.02, 0.02**2=0.004, 0.0004**3=6.401e-11]
 print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
-```
-
-### Include all untagged fields
-
-To apply converters to all the untagged fields, use `untagged_include="__all__"`:
-
-```python
-...
-
-@exert(
-    converters=(lambda x: x**2, lambda x: x**3),
-    untagged_include="__all__",
-)
-@dataclass
-class Foo:
-    a: int
-    b: float
-
-
-foo = Foo(2, 42.0)
-
-print(foo.a)  # prints 64   [2**2=4, 4**4=64]
-print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
-```
-
-### Exclude all tagged fields
-
-To ignore all the fields tagged with `Annotated`, use `tagged_exclude="__all__"`:
-
-```python
-...
-
-@exert(
-    converters=(lambda x: x**2, lambda x: x**3),
-    tagged_exclude="__all__",
-)
-@dataclass
-class Foo:
-    a: Annotated[int, lambda x: x**2]
-    b: Annotated[float, lambda x: x**3]
-
-
-foo = Foo(2, 42.0)
-
-print(foo.a)  # prints 2   [Untouched]
-print(foo.b)  # prints 42.0 [Untouched]
 ```
 
 <div align="center">
