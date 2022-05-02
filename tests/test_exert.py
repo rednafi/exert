@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from exert import exert, Mark
+from exert import Mark, exert
 
 if sys.version_info >= (3, 9):
     from typing import Annotated

@@ -4,12 +4,17 @@ import sys
 from typing import Callable, Generic, Iterable, TypeVar, cast, overload
 
 if sys.version_info >= (3, 9):
-    from typing import Annotated, get_type_hints, get_args, get_origin
+    from typing import Annotated, get_args, get_origin, get_type_hints  # type: ignore
 else:
-    from typing_extensions import Annotated, get_type_hints, get_args, get_origin
+    from typing_extensions import (  # type: ignore
+        Annotated,
+        get_args,
+        get_origin,
+        get_type_hints,
+    )
 
 
-__all__ = ('exert', 'Mark')
+__all__ = ("exert", "Mark")
 
 _C = TypeVar("_C")
 _T = TypeVar("_T")
@@ -58,12 +63,15 @@ class Mark:
         return "<exert Converter>"
 
 
-def get_markers_from_annotation(annotation: type, marker_cls: type[_T]) -> list[_T]:
+def get_markers_from_annotation(
+    annotation: type, marker_cls: type[Mark]
+) -> list[Callable]:
     """
-    In the case of multiple markers in PEP 593 Annotated or nested use of Annotated
-    (which are equivalent and get flattened by Annoated itself) we return markers from
-    left to right.
+    In the case of multiple markers in PEP 593 Annotated or nested use of
+    Annotated (which are equivalent and get flattened by Annoated itself),
+    we return markers from left to right.
     """
+
     return [
         converter
         for arg in get_args(annotation)
@@ -123,17 +131,3 @@ def exert(
         return wrapper(cls)
 
     return wrapper
-
-
-# from dataclasses import dataclass
-# from typing import Annotated
-
-# @exert(converters=(str,), apply_last=True)
-# @dataclass
-# class Foo:
-#     a: Annotated[int, lambda x: x**2]
-#     b: Annotated[int, None]
-
-
-# foo = Foo(2, 3)
-# print(isinstance(foo.b, str))
