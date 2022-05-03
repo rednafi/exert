@@ -128,7 +128,7 @@ class Foo:
 
 foo = Foo(2, 42.0)
 
-print(foo.a)  # prints 2      [This field remains untouched]
+print(foo.a)  # prints 4      [2**2=4]
 print(foo.b)  # prints 1764.0 [42.0**2=1764.0]
 ```
 
