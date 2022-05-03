@@ -129,5 +129,4 @@ def exert(
 
     if cls is not None:
         return wrapper(cls)
-
     return wrapper
