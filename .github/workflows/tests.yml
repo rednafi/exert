@@ -1,22 +1,15 @@
-name: Run Tests
+name: Tests
 
 on:
-  release:
-    types: [published]
-    branches:
-      - main
-    tags:
-      - "v*"
-
   push:
     branches:
       - main
-    tags:
-      - "v*"
+      - dev
 
   pull_request:
     branches:
       - main
+      - dev
 
   schedule:
     # Every week at 0.00 UTC.

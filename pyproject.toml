@@ -18,17 +18,19 @@ warn_unused_ignores = false
 allow_untyped_globals = true
 allow_redefinition = true
 pretty = true
-
+exclude = "build|dist|tests"
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
 
 # PEP-517 compliant build system
 [build-system]
 requires = [
   "setuptools >= 40.9.0",
   "wheel",
+  "mypy"
 ]
 
 build-backend = "setuptools.build_meta"
