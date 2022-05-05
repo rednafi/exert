@@ -1,3 +1,5 @@
+"""Mix common and attribute specific converters."""
+
 from __future__ import annotations
 
 import time

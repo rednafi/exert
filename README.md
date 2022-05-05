@@ -87,7 +87,8 @@ print(foo.b) # prints 7.0 [42.0/2=21.0, 21.0/3=7.0]
 ```
 
 Here, the converters are applied sequentially. The result of the preceding converter is
-fed into the succeeding converter as input. You've to make sure that the number of the returned values of the preceding converter matches that of the succeeding converter.
+fed into the succeeding converter as input. You've to make sure that the number of the
+returned values of the preceding converter matches that of the succeeding converter.
 
 ### Exclude annotated fields
 
@@ -175,6 +176,52 @@ foo = Foo(2, 42.0)
 print(foo.a)  # prints 6.401e-11 [2/100=0.02, 0.02**2=0.004, 0.0004**3=6.401e-11]
 print(foo.b)  # prints 5489031744.0 [42.0**2=1764, 1764**3=5489031744.0]
 ```
+
+### Simple data validation
+
+The snippet below ensures that the attributes of the class `Foo` conforms to the constraints imposed by the converter functions.
+
+```python
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from functools import partial
+from typing import Annotated, Sized
+
+from exert import Mark, exert
+
+
+def assert_len(x: Sized, length: int) -> Sized:
+    """Assert that the incoming attribute has the expected length."""
+
+    assert len(x) == length
+    return x
+
+
+def assert_json(x: dict) -> dict:
+    """Assert that the incoming attribute is JSON serializable."""
+
+    try:
+        json.dumps(x)
+    except TypeError:
+        raise AssertionError(f"{x} is not JSON serializable")
+    return x
+
+
+@exert
+@dataclass
+class Foo:
+    a: Annotated[tuple[int, ...], Mark(partial(assert_len, length=3))]
+    b: Annotated[dict, Mark(assert_json)]
+
+
+foo = Foo(a=(1, 2, 3), b={"a": 1, "b": 2})
+print(foo)
+```
+
+This will raise `AssertionError` if the value of the attributes violate the constraints.
+
 
 <div align="center">
 <i> ✨ 🍰 ✨ </i>
