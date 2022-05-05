@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from functools import partial
-from typing import Annotated, Sized
+from typing import Annotated, Sized  # type: ignore
 
 from exert import Mark, exert
 
