@@ -10,8 +10,8 @@ on:
   pull_request: {}
 
   schedule:
-    # Every week at 0.00 UTC.
-    - cron: '0 0 * * 0'
+    # Every Sunday at 00:37 UTC.
+    - cron: '37 0 * * 0'
 
 # If you trigger a new workflow while the previous one is running,
 # this will cancel the previous one.
@@ -30,7 +30,7 @@ jobs:
       # Use matrix strategy to run the tests on multiple Py versions on multiple OSs.
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
         include:
         - os: ubuntu-latest
           path: ~/.cache/pip
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -81,7 +81,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.11.1
         env:
-          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-*
+          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-*
           CIBW_BUILD_FRONTEND: 'build'
 
       - uses: actions/upload-artifact@v3
