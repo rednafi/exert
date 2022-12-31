@@ -10,7 +10,7 @@ endef
 
 
 .PHONY: lint
-lint: black isort flake mypy	## Apply all the linters.
+lint: black ruff mypy	## Apply all the linters.
 
 
 .PHONY: lint-check
@@ -19,8 +19,8 @@ lint-check:  ## Check whether the codebase satisfies the linter rules.
 	@echo "Checking linter rules..."
 	@echo "========================"
 	@echo
-	@black --fast --check $(path)
-	@isort
+	@black --check $(path)
+	@ruff $(path)
 	@echo 'y' | mypy $(path) --install-types
 
 
@@ -31,26 +31,15 @@ black: ## Apply black.
 	@echo "================="
 	@echo
 	@black --fast $(path)
-	@flake8 $(path)
-	@isort --profile black $(path)
 	@echo
 
 
-.PHONY: isort
-isort: ## Apply isort.
-	@echo "Applying isort..."
-	@echo "================="
+.PHONY: ruff
+ruff: ## Apply ruff.
+	@echo "Applying ruff..."
+	@echo "================"
 	@echo
-	@isort $(path) --profile black
-
-
-.PHONY: flake
-flake: ## Apply flake8.
-	@echo
-	@echo "Applying flake8..."
-	@echo "================="
-	@echo
-	@flake8 $(path)
+	@ruff --fix $(path)
 
 
 .PHONY: mypy
@@ -74,21 +63,10 @@ test: ## Run the tests against the current version of Python.
 
 .PHONY: dep-lock
 dep-lock: ## Freeze deps in 'requirements.txt' file.
-	@pip-compile requirements.in -o requirements.txt
-	@pip-compile requirements-dev.in -o requirements-dev.txt
+	@pip-compile requirements.in -o requirements.txt --no-emit-options
+	@pip-compile requirements-dev.in -o requirements-dev.txt --no-emit-options
 
 
 .PHONY: dep-sync
 dep-sync: ## Sync venv installation with 'requirements.txt' file.
 	@pip-sync
-
-
-.PHONY: build
-build: ## Build the package.
-	@rm -rf dist/*
-	@python -m build
-
-
-.PHONY: upload
-upload: build ## Build the package.
-	@twine upload dist/*
